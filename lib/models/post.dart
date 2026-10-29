@@ -2,6 +2,7 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:intl/intl.dart';
 
 /// A news article from the WordPress REST API.
+/// [content] is the full HTML body; it is filled only when the article is opened.
 class NewsPost {
   final int id;
   final String title;
@@ -9,6 +10,7 @@ class NewsPost {
   final DateTime date;
   final String category;
   final String? imageUrl;
+  final String? content;
 
   const NewsPost({
     required this.id,
@@ -17,6 +19,7 @@ class NewsPost {
     required this.date,
     required this.category,
     this.imageUrl,
+    this.content,
   });
 
   factory NewsPost.fromJson(Map<String, dynamic> json) {
@@ -42,6 +45,7 @@ class NewsPost {
     }
 
     final rawTitle = (json['title'] as Map<String, dynamic>)['rendered'] as String? ?? '';
+    final body = (json['content'] as Map<String, dynamic>?)?['rendered'] as String?;
 
     return NewsPost(
       id: json['id'] as int,
@@ -50,6 +54,7 @@ class NewsPost {
       date: DateTime.parse(json['date'] as String),
       category: HtmlUnescape().convert(category),
       imageUrl: image,
+      content: body,
     );
   }
 

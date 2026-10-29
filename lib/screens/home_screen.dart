@@ -1,12 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
+import '../models/category.dart';
 import '../models/post.dart';
 import '../services/wp_api.dart';
+import '../widgets/category_bar.dart';
+import '../widgets/story_cards.dart';
+import 'search_screen.dart';
 
-/// News feed: lead story on top, then a list of story rows.
+/// News feed: category tabs, a lead story, then story rows.
 /// Pull down to refresh, scroll down to load more.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scroll = ScrollController();
   final _posts = <NewsPost>[];
 
+  List<NewsCategory> _categories = [];
+  int _categoryId = 0; // 0 means all categories
   int _page = 1;
+  int _requestId = 0; // newer requests make older responses stale
   bool _loading = false;
   bool _hasMore = true;
   String? _error;
@@ -29,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    _loadCategories();
     _load(reset: true);
   }
 
@@ -45,9 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await _api.fetchCategories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {
+      // Category tabs are optional; the feed still works without them.
+    }
+  }
+
+  void _selectCategory(int id) {
+    if (id == _categoryId) return;
+    setState(() => _categoryId = id);
+    _load(reset: true);
+  }
+
   Future<void> _load({bool reset = false}) async {
-    if (_loading) return;
-    if (!reset && !_hasMore) return;
+    if (!reset && (_loading || !_hasMore)) return;
+
+    final request = reset ? ++_requestId : _requestId;
+    final page = reset ? 1 : _page;
+    final categoryId = _categoryId;
 
     setState(() {
       _loading = true;
@@ -59,16 +83,16 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final items = await _api.fetchPosts(page: _page);
-      if (!mounted) return;
+      final items = await _api.fetchPosts(page: page, categoryId: categoryId);
+      if (!mounted || request != _requestId) return;
       setState(() {
         if (reset) _posts.clear();
         _posts.addAll(items);
         _hasMore = items.length == AppConfig.pageSize;
-        _page++;
+        _page = page + 1;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || request != _requestId) return;
       if (_posts.isEmpty) {
         setState(() => _error = 'Could not load news. Check your connection.');
       } else {
@@ -77,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && request == _requestId) setState(() => _loading = false);
     }
   }
 
@@ -85,18 +109,33 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Chitradurga Live',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: const Text('Chitradurga Live', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.account_circle_outlined), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Search',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            ),
+          ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _load(reset: true),
-        child: _buildBody(),
+      body: Column(
+        children: [
+          if (_categories.isNotEmpty)
+            CategoryBar(
+              categories: _categories,
+              selectedId: _categoryId,
+              onSelected: _selectCategory,
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _load(reset: true),
+              child: _buildBody(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -126,6 +165,17 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    if (_posts.isEmpty) {
+      return ListView(
+        children: const [
+          Padding(
+            padding: EdgeInsets.all(32),
+            child: Text('No stories here yet.', textAlign: TextAlign.center),
+          ),
+        ],
+      );
+    }
+
     return ListView.builder(
       controller: _scroll,
       padding: const EdgeInsets.all(12),
@@ -141,143 +191,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         return i == 0 ? LeadCard(post: _posts[i]) : StoryRow(post: _posts[i]);
       },
-    );
-  }
-}
-
-/// Opens the article on the website in the phone's browser.
-Future<void> openArticle(BuildContext context, NewsPost post) async {
-  final ok = await launchUrl(Uri.parse(post.link), mode: LaunchMode.externalApplication);
-  if (!ok && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open the article.')),
-    );
-  }
-}
-
-/// The top story: large photo with the headline over it.
-class LeadCard extends StatelessWidget {
-  final NewsPost post;
-  const LeadCard({super.key, required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => openArticle(context, post),
-        child: Stack(
-          children: [
-            AspectRatio(
-              aspectRatio: 4 / 3,
-              child: post.imageUrl != null
-                  ? CachedNetworkImage(imageUrl: post.imageUrl!, fit: BoxFit.cover)
-                  : Container(color: Colors.grey.shade800),
-            ),
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black87],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (post.category.isNotEmpty)
-                    Text(
-                      post.category,
-                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    post.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Chitradurga Live · ${timeAgo(post.date)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A standard story: headline on the left, thumbnail on the right.
-class StoryRow extends StatelessWidget {
-  final NewsPost post;
-  const StoryRow({super.key, required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: () => openArticle(context, post),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.title,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${post.category.isNotEmpty ? '${post.category} · ' : ''}${timeAgo(post.date)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (post.imageUrl != null) ...[
-                const SizedBox(width: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: post.imageUrl!,
-                    width: 110,
-                    height: 82,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

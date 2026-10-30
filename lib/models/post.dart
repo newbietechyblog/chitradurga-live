@@ -9,6 +9,7 @@ class NewsPost {
   final String link;
   final DateTime date;
   final String category;
+  final int? categoryId;
   final String? imageUrl;
   final String? content;
 
@@ -18,6 +19,7 @@ class NewsPost {
     required this.link,
     required this.date,
     required this.category,
+    this.categoryId,
     this.imageUrl,
     this.content,
   });
@@ -36,11 +38,14 @@ class NewsPost {
 
     // Category: first term of the first group (WordPress nests terms in lists).
     var category = '';
+    int? categoryId;
     final termGroups = embedded?['wp:term'] as List?;
     if (termGroups != null && termGroups.isNotEmpty) {
       final firstGroup = termGroups.first as List?;
       if (firstGroup != null && firstGroup.isNotEmpty) {
-        category = (firstGroup.first as Map<String, dynamic>)['name'] as String? ?? '';
+        final term = firstGroup.first as Map<String, dynamic>;
+        category = term['name'] as String? ?? '';
+        categoryId = (term['id'] as num?)?.toInt();
       }
     }
 
@@ -53,6 +58,7 @@ class NewsPost {
       link: json['link'] as String,
       date: DateTime.parse(json['date'] as String),
       category: HtmlUnescape().convert(category),
+      categoryId: categoryId,
       imageUrl: image,
       content: body,
     );

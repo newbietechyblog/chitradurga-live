@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import '../models/category.dart';
 import '../models/extras.dart';
+import '../models/notice.dart';
 import '../models/post.dart';
+import '../models/reader_update.dart';
 
 /// Talks to the WordPress site. Every screen goes through this class.
 class WpApi {
@@ -22,10 +24,15 @@ class WpApi {
   }
 
   /// News list. Pass [categoryId] to filter, or [search] to search titles and text.
-  Future<List<NewsPost>> fetchPosts({int page = 1, int? categoryId, String? search}) async {
+  Future<List<NewsPost>> fetchPosts({
+    int page = 1,
+    int? categoryId,
+    String? search,
+    int perPage = AppConfig.pageSize,
+  }) async {
     final params = <String, String>{
       '_embed': '1',
-      'per_page': '${AppConfig.pageSize}',
+      'per_page': '$perPage',
       'page': '$page',
       if (categoryId != null && categoryId > 0) 'categories': '$categoryId',
       if (search != null && search.isNotEmpty) 'search': search,
@@ -84,6 +91,86 @@ class WpApi {
     });
     final list = await _getJson(uri) as List<dynamic>;
     return list.map((e) => LocalInfo.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Most discussed stories (by comments), optionally leaving out one story.
+  Future<List<NewsPost>> fetchTopPosts({int count = 5, int? excludeId}) async {
+    final uri = Uri.parse('${AppConfig.wpApi}/posts').replace(queryParameters: {
+      '_embed': '1',
+      'per_page': '$count',
+      'orderby': 'comment_count',
+      'order': 'desc',
+      if (excludeId != null) 'exclude': '$excludeId',
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => NewsPost.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Other stories in the same category.
+  Future<List<NewsPost>> fetchRelatedPosts({
+    required int categoryId,
+    required int excludeId,
+    int count = 5,
+  }) async {
+    final uri = Uri.parse('${AppConfig.wpApi}/posts').replace(queryParameters: {
+      '_embed': '1',
+      'per_page': '$count',
+      'categories': '$categoryId',
+      'exclude': '$excludeId',
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => NewsPost.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Reader-written posts approved by editors. [kind] is news, story or poster; null means all.
+  Future<List<ReaderUpdate>> fetchReaderUpdates({String? kind, int page = 1, int perPage = 10}) async {
+    final uri = Uri.parse('${AppConfig.appApi}/submissions').replace(queryParameters: {
+      'per_page': '$perPage',
+      'page': '$page',
+      if (kind != null) 'kind': kind,
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => ReaderUpdate.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Breaking news, upcoming events and new polls, newest first.
+  Future<List<AppNotice>> fetchNotices() async {
+    final breaking = await fetchBreaking().catchError((_) => <BreakingItem>[]);
+    final events = await fetchEvents(days: 14).catchError((_) => <CalendarEvent>[]);
+    final polls = await fetchPolls().catchError((_) => <Poll>[]);
+    final now = DateTime.now();
+
+    final notices = [
+      for (final b in breaking)
+        AppNotice(
+          key: 'b${b.id}',
+          title: b.title,
+          subtitle: 'Breaking news',
+          date: b.date,
+          kind: NoticeKind.breaking,
+          id: b.id,
+        ),
+      for (final e in events)
+        AppNotice(
+          key: 'e${e.id}',
+          title: e.title,
+          subtitle: 'Upcoming event${e.place.isNotEmpty ? ' · ${e.place}' : ''}',
+          date: e.date ?? now,
+          kind: NoticeKind.event,
+          id: e.id,
+        ),
+      for (final p in polls.take(5))
+        AppNotice(
+          key: 'p${p.id}',
+          title: p.question,
+          subtitle: 'New poll',
+          date: p.date ?? now,
+          kind: NoticeKind.poll,
+          id: p.id,
+        ),
+    ];
+    notices.sort((a, b) => b.date.compareTo(a.date));
+    return notices;
   }
 
   void dispose() => _client.close();

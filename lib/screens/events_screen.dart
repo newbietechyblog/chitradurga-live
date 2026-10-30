@@ -133,6 +133,35 @@ class _EventsScreenState extends State<EventsScreen> {
       );
     }
 
+    // All events: one section per category.
+    if (_category == 'all') {
+      final children = <Widget>[];
+      for (final key in ['temple', 'festival', 'programme', 'other']) {
+        final items = _events.where((e) => e.category == key).toList();
+        if (items.isEmpty) continue;
+        children.add(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+            child: Text(
+              '${_eventCategories[key]} (${items.length})',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        );
+        for (final e in items) {
+          children.add(EventCard(event: e, onTap: () => _showDetails(e)));
+        }
+      }
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        children: children,
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: _events.length,

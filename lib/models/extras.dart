@@ -37,6 +37,7 @@ class Poll {
   final List<PollOption> options;
   final int total;
   final int? myVote;
+  final DateTime? date;
 
   const Poll({
     required this.id,
@@ -44,6 +45,7 @@ class Poll {
     required this.options,
     required this.total,
     required this.myVote,
+    this.date,
   });
 
   factory Poll.fromJson(Map<String, dynamic> json) => Poll(
@@ -54,6 +56,7 @@ class Poll {
             .toList(),
         total: (json['total'] as num?)?.toInt() ?? 0,
         myVote: (json['myVote'] as num?)?.toInt(),
+        date: DateTime.tryParse(json['date'] as String? ?? ''),
       );
 }
 

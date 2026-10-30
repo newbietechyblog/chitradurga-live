@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'screens/events_screen.dart';
-import 'screens/helplines_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/me_screen.dart';
 import 'screens/polls_screen.dart';
+import 'screens/updates_screen.dart';
 
 void main() {
   runApp(const ChitradurgaLiveApp());
@@ -42,7 +42,7 @@ class ChitradurgaLiveApp extends StatelessWidget {
   }
 }
 
-/// Bottom menu: News, Events, Polls, Helplines and Me.
+/// Bottom menu: Home, Events, Updates, Polls and Me. Helplines and the rest are in the side menu.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -58,11 +58,11 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [
-          HomeScreen(),
+        children: [
+          const HomeScreen(),
           EventsScreen(),
+          const UpdatesScreen(),
           PollsScreen(),
-          HelplinesScreen(),
           MeScreen(),
         ],
       ),
@@ -71,9 +71,9 @@ class _MainShellState extends State<MainShell> {
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.newspaper_outlined),
-            selectedIcon: Icon(Icons.newspaper),
-            label: 'News',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.temple_hindu_outlined),
@@ -81,14 +81,14 @@ class _MainShellState extends State<MainShell> {
             label: 'Events',
           ),
           NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Updates',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.poll_outlined),
             selectedIcon: Icon(Icons.poll),
             label: 'Polls',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.support_agent_outlined),
-            selectedIcon: Icon(Icons.support_agent),
-            label: 'Helplines',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

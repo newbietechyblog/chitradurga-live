@@ -5,6 +5,7 @@ import '../models/post.dart';
 import '../services/links.dart';
 import '../services/wp_api.dart';
 import '../widgets/article_body.dart';
+import '../widgets/article_more.dart';
 
 /// Full article inside the app. Shows the list data at once, then loads the body.
 class ArticleScreen extends StatefulWidget {
@@ -113,6 +114,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
           if (_error != null)
             Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           if (post.content != null) ArticleBody(html: post.content!),
+          const SizedBox(height: 16),
+          if (_full != null) ArticleMore(post: _full!),
         ],
       ),
     );

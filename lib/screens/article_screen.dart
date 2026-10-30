@@ -5,6 +5,8 @@ import '../models/post.dart';
 import '../services/links.dart';
 import '../services/wp_api.dart';
 import '../widgets/article_body.dart';
+import '../widgets/article_actions.dart';
+import '../widgets/article_comments.dart';
 import '../widgets/article_more.dart';
 
 /// Full article inside the app. Shows the list data at once, then loads the body.
@@ -18,7 +20,15 @@ class ArticleScreen extends StatefulWidget {
 
 class _ArticleScreenState extends State<ArticleScreen> {
   final _api = WpApi();
+  final _commentsKey = GlobalKey();
   NewsPost? _full;
+
+  void _scrollToComments() {
+    final target = _commentsKey.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 400));
+    }
+  }
   bool _loading = true;
   String? _error;
 
@@ -120,6 +130,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
             Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           if (post.content != null) ArticleBody(html: post.content!),
           const SizedBox(height: 16),
+          if (_full != null)
+            ArticleActions(
+              postId: post.id,
+              title: post.title,
+              link: post.link,
+              onComments: _scrollToComments,
+            ),
+          if (_full != null) ArticleComments(key: _commentsKey, postId: post.id),
           if (_full != null) ArticleMore(post: _full!),
         ],
       ),

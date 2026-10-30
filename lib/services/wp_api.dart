@@ -8,6 +8,7 @@ import '../models/extras.dart';
 import '../models/notice.dart';
 import '../models/post.dart';
 import '../models/reader_update.dart';
+import '../models/social.dart';
 
 /// Talks to the WordPress site. Every screen goes through this class.
 class WpApi {
@@ -171,6 +172,31 @@ class WpApi {
     ];
     notices.sort((a, b) => b.date.compareTo(a.date));
     return notices;
+  }
+
+  /// Likes and comment count for a news story. Pass [authHeader] to learn whether you liked it.
+  Future<NewsSocial> fetchNewsSocial(int id, {String? authHeader}) async {
+    final response = await _client
+        .get(
+          Uri.parse('${AppConfig.appApi}/news/$id/social'),
+          headers: {if (authHeader != null) 'Authorization': authHeader},
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Request failed (${response.statusCode})');
+    }
+    return NewsSocial.fromJson(jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+  }
+
+  /// Approved comments on a news story, newest first.
+  Future<List<NewsComment>> fetchComments(int postId) async {
+    final uri = Uri.parse('${AppConfig.wpApi}/comments').replace(queryParameters: {
+      'post': '$postId',
+      'per_page': '50',
+      'order': 'desc',
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => NewsComment.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   void dispose() => _client.close();

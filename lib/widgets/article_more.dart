@@ -61,7 +61,7 @@ class _ArticleMoreState extends State<ArticleMore> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_related.isNotEmpty) ...[
-          const SectionHeader(title: 'Related stories'),
+          const SectionHeader(title: 'Recommended for you'),
           for (final p in _related)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),

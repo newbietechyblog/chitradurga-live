@@ -105,6 +105,43 @@ class AccountApi {
     return Poll.fromJson(_check(res) as Map<String, dynamic>);
   }
 
+  /// Likes or unlikes a news story and returns the new state.
+  Future<({bool liked, int likes})> toggleNewsLike({
+    required Session session,
+    required int postId,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('${AppConfig.appApi}/news/$postId/like'),
+      headers: {'Authorization': session.authHeader},
+    ).timeout(_timeout);
+    final map = _check(res) as Map<String, dynamic>;
+    return (
+      liked: map['liked'] == true,
+      likes: (map['likes'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Posts a comment on a news story. Returns WordPress's status: "approved", or "hold" when
+  /// an editor needs to check it first.
+  Future<String> postComment({
+    required Session session,
+    required int postId,
+    required String text,
+  }) async {
+    final res = await _client
+        .post(
+          Uri.parse('${AppConfig.wpApi}/comments'),
+          headers: {
+            'Authorization': session.authHeader,
+            'Content-Type': 'application/json; charset=utf-8',
+          },
+          body: jsonEncode({'post': postId, 'content': text}),
+        )
+        .timeout(_timeout);
+    final map = _check(res) as Map<String, dynamic>;
+    return map['status'] as String? ?? 'approved';
+  }
+
   /// Returns the decoded body, or throws [ApiException] with the server's message.
   dynamic _check(http.Response res) {
     dynamic data;

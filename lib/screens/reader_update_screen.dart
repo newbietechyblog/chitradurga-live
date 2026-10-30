@@ -5,6 +5,7 @@ import '../models/post.dart';
 import '../models/reader_update.dart';
 import '../widgets/ad_slot.dart';
 import '../widgets/article_body.dart';
+import '../widgets/report.dart';
 import '../widgets/site_footer.dart';
 
 /// One reader-written post, opened from the home page or the Reader updates list.
@@ -21,6 +22,13 @@ class ReaderUpdateScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(update.kindLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            tooltip: 'Report',
+            icon: const Icon(Icons.flag_outlined),
+            onPressed: () => reportContent(context, type: 'submission', id: update.id),
+          ),
+        ],
       ),
       body: ListView(
         padding: EdgeInsets.zero,

@@ -142,6 +142,32 @@ class AccountApi {
     return map['status'] as String? ?? 'approved';
   }
 
+  /// Permanently deletes the signed-in account after the password is confirmed.
+  Future<void> deleteAccount({required Session session, required String password}) async {
+    final res = await _client.post(
+      Uri.parse('${AppConfig.appApi}/me/delete'),
+      headers: {'Authorization': session.authHeader},
+      body: {'password': password},
+    ).timeout(_timeout);
+    _check(res);
+  }
+
+  /// Sends a report to the editors. [type] is comment, submission or user.
+  Future<String> report({
+    required Session session,
+    required String type,
+    required int id,
+    required String reason,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('${AppConfig.appApi}/report'),
+      headers: {'Authorization': session.authHeader},
+      body: {'type': type, 'id': '$id', 'reason': reason},
+    ).timeout(_timeout);
+    final map = _check(res) as Map<String, dynamic>;
+    return map['message'] as String? ?? 'Thank you. Our editors will review this.';
+  }
+
   /// Returns the decoded body, or throws [ApiException] with the server's message.
   dynamic _check(http.Response res) {
     dynamic data;

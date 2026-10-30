@@ -16,8 +16,10 @@ class NewsSocial {
 }
 
 /// One approved comment on a news story. [html] is the comment text as WordPress stores it.
+/// [authorId] is 0 for guests, who cannot be blocked.
 class NewsComment {
   final int id;
+  final int authorId;
   final String author;
   final String avatar;
   final DateTime date;
@@ -25,6 +27,7 @@ class NewsComment {
 
   const NewsComment({
     required this.id,
+    required this.authorId,
     required this.author,
     required this.avatar,
     required this.date,
@@ -36,6 +39,7 @@ class NewsComment {
     final avatars = json['author_avatar_urls'] as Map<String, dynamic>?;
     return NewsComment(
       id: (json['id'] as num).toInt(),
+      authorId: (json['author'] as num?)?.toInt() ?? 0,
       author: HtmlUnescape().convert(json['author_name'] as String? ?? 'Reader'),
       avatar: avatars?['96'] as String? ?? '',
       date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),

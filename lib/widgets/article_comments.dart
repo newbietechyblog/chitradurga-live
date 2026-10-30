@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../models/social.dart';
 import '../services/account_api.dart';
+import '../services/block_list.dart';
 import '../services/session.dart';
 import '../services/text_utils.dart';
 import '../services/wp_api.dart';
 import 'article_actions.dart';
+import 'report.dart';
 
 /// Comments under an article, with a box to write one. Signed-out readers see a sign-in button.
+/// Each comment has a menu to report it or block its writer.
 class ArticleComments extends StatefulWidget {
   final int postId;
 
@@ -23,6 +26,7 @@ class _ArticleCommentsState extends State<ArticleComments> {
   final _account = AccountApi();
   final _controller = TextEditingController();
   List<NewsComment> _comments = [];
+  Set<int> _blocked = {};
   Session? _session;
   bool _loading = true;
   bool _sending = false;
@@ -50,10 +54,12 @@ class _ArticleCommentsState extends State<ArticleComments> {
     try {
       final session = await Session.load();
       final comments = await _api.fetchComments(widget.postId);
+      final blocked = await BlockList.load();
       if (mounted) {
         setState(() {
           _session = session;
           _comments = comments;
+          _blocked = blocked;
         });
       }
     } catch (_) {
@@ -66,6 +72,15 @@ class _ArticleCommentsState extends State<ArticleComments> {
   Future<void> _signIn() async {
     final session = await ensureSignedIn(context);
     if (session != null && mounted) setState(() => _session = session);
+  }
+
+  Future<void> _block(NewsComment c) async {
+    await BlockList.add(c.authorId);
+    if (!mounted) return;
+    setState(() => _blocked = {..._blocked, c.authorId});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('You will no longer see comments from ${c.author}.')),
+    );
   }
 
   Future<void> _send() async {
@@ -120,6 +135,9 @@ class _ArticleCommentsState extends State<ArticleComments> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    final visible = _comments
+        .where((c) => c.authorId == 0 || !_blocked.contains(c.authorId))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -127,7 +145,7 @@ class _ArticleCommentsState extends State<ArticleComments> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
           child: Text(
-            'Comments (${_comments.length})',
+            'Comments (${visible.length})',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
         ),
@@ -184,13 +202,18 @@ class _ArticleCommentsState extends State<ArticleComments> {
             padding: const EdgeInsets.all(16),
             child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           )
-        else if (_comments.isEmpty)
+        else if (visible.isEmpty)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text('No comments yet. Be the first to comment.', style: TextStyle(color: muted)),
           )
         else
-          for (final c in _comments) _CommentTile(comment: c),
+          for (final c in visible)
+            _CommentTile(
+              comment: c,
+              onReport: () => reportContent(context, type: 'comment', id: c.id),
+              onBlock: c.authorId == 0 ? null : () => _block(c),
+            ),
       ],
     );
   }
@@ -198,8 +221,10 @@ class _ArticleCommentsState extends State<ArticleComments> {
 
 class _CommentTile extends StatelessWidget {
   final NewsComment comment;
+  final VoidCallback onReport;
+  final VoidCallback? onBlock;
 
-  const _CommentTile({required this.comment});
+  const _CommentTile({required this.comment, required this.onReport, this.onBlock});
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +232,7 @@ class _CommentTile extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,9 +240,7 @@ class _CommentTile extends StatelessWidget {
             radius: 18,
             backgroundColor: theme.colorScheme.surfaceContainerHighest,
             backgroundImage: comment.avatar.isNotEmpty ? NetworkImage(comment.avatar) : null,
-            child: comment.avatar.isEmpty
-                ? Icon(Icons.person, color: muted, size: 20)
-                : null,
+            child: comment.avatar.isEmpty ? Icon(Icons.person, color: muted, size: 20) : null,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -241,6 +264,19 @@ class _CommentTile extends StatelessWidget {
                 Text(plainText(comment.html), style: const TextStyle(height: 1.45)),
               ],
             ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: Icon(Icons.more_vert, color: muted, size: 20),
+            onSelected: (value) {
+              if (value == 'report') onReport();
+              if (value == 'block') onBlock?.call();
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'report', child: Text('Report comment')),
+              if (onBlock != null)
+                PopupMenuItem(value: 'block', child: Text('Block ${comment.author}')),
+            ],
           ),
         ],
       ),

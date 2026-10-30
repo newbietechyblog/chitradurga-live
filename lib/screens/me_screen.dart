@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/account_api.dart';
 import '../services/session.dart';
 import 'create_post_screen.dart';
 import 'sign_in_screen.dart';
@@ -38,6 +39,70 @@ class _MeScreenState extends State<MeScreen> {
       MaterialPageRoute(builder: (_) => SignInScreen(startWithCreate: create)),
     );
     if (ok == true) _reload();
+  }
+
+  Future<void> _deleteAccount() async {
+    final session = _session;
+    if (session == null) return;
+
+    final controller = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This permanently deletes your sign-in and profile. Your posts and comments stay on the site, '
+              'but are no longer linked to your name. This cannot be undone.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Enter your password to confirm',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (password == null || password.isEmpty || !mounted) return;
+
+    final api = AccountApi();
+    try {
+      await api.deleteAccount(session: session, password: password);
+      await Session.clear();
+      if (mounted) {
+        setState(() => _session = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your account has been deleted.')),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete your account. Check your connection.')),
+        );
+      }
+    } finally {
+      api.dispose();
+    }
   }
 
   Future<void> _signOut() async {
@@ -161,6 +226,12 @@ class _MeScreenState extends State<MeScreen> {
                 leading: const Icon(Icons.logout),
                 title: const Text('Sign out'),
                 onTap: _signOut,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Delete my account', style: TextStyle(color: Colors.red)),
+                onTap: _deleteAccount,
               ),
             ],
           ),

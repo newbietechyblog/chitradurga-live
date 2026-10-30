@@ -10,6 +10,8 @@ import '../services/wp_api.dart';
 import '../widgets/ad_slot.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/breaking_banner.dart';
+import '../widgets/category_feed.dart';
+import '../widgets/category_tabs.dart';
 import '../widgets/section_header.dart';
 import '../widgets/site_footer.dart';
 import '../widgets/story_cards.dart';
@@ -29,8 +31,33 @@ const _eventGroups = {
   'other': 'Other events',
 };
 
-/// Home page: breaking news, lead story, news by category, most discussed,
-/// reader updates, events by category, ad spaces and the footer.
+const _exploreIcons = [
+  Icons.newspaper,
+  Icons.sports_cricket,
+  Icons.theater_comedy,
+  Icons.account_balance,
+  Icons.agriculture,
+  Icons.school,
+  Icons.health_and_safety,
+  Icons.movie_outlined,
+  Icons.business_center_outlined,
+];
+
+const _explorePalette = [
+  Color(0xFFC62828),
+  Color(0xFF1565C0),
+  Color(0xFF2E7D32),
+  Color(0xFFEF6C00),
+  Color(0xFF6A1B9A),
+  Color(0xFF00838F),
+  Color(0xFFAD1457),
+  Color(0xFF4E342E),
+  Color(0xFF283593),
+];
+
+/// Home page. The first tab, "For you", shows breaking news, trending stories,
+/// explore tiles, news by category, reader updates, events and the footer.
+/// Other tabs show the stories of one category.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -44,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _api = WpApi();
   bool _loading = true;
   String? _error;
+  int _tab = 0; // 0 is "For you"; 1 and up are categories
   List<NewsCategory> _categories = [];
   List<NewsPost> _latest = [];
   List<NewsPost> _mostDiscussed = [];
@@ -73,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final categories = await _api.fetchCategories().catchError((_) => <NewsCategory>[]);
       final sections = categories.take(_categorySections).toList();
 
-      final latestF = _api.fetchPosts().catchError((_) => <NewsPost>[]);
+      final latestF = _api.fetchPosts(perPage: 15).catchError((_) => <NewsPost>[]);
       final topF = _api.fetchTopPosts().catchError((_) => <NewsPost>[]);
       final updatesF = _api.fetchReaderUpdates(perPage: 8).catchError((_) => <ReaderUpdate>[]);
       final eventsF = _api.fetchEvents(days: 30).catchError((_) => <CalendarEvent>[]);
@@ -146,10 +174,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tabLabels = ['For you', for (final c in _categories) c.name];
+    final showingCategory = _tab > 0 && _tab <= _categories.length;
+
     return Scaffold(
       drawer: AppDrawer(categories: _categories),
       appBar: AppBar(
-        title: const Text('Chitradurga Live', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Chitradurga Live',
+          style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFC62828)),
+        ),
         actions: [
           IconButton(
             tooltip: 'Notifications',
@@ -167,14 +201,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(),
+      body: Column(
+        children: [
+          if (_categories.isNotEmpty)
+            CategoryTabs(
+              labels: tabLabels,
+              selected: _tab,
+              onSelected: (i) => setState(() => _tab = i),
+            ),
+          Expanded(
+            child: showingCategory
+                ? CategoryFeed(
+                    key: ValueKey(_categories[_tab - 1].id),
+                    categoryId: _categories[_tab - 1].id,
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: _buildForYou(),
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildForYou() {
     if (_loading && _latest.isEmpty && _byCategory.isEmpty) {
       return ListView(
         children: const [
@@ -202,10 +253,30 @@ class _HomeScreenState extends State<HomeScreen> {
       children.add(LeadCard(post: _latest.first));
     }
 
-    // Latest stories
+    // Trending: large cards in a row
     if (_latest.length > 1) {
+      children.add(const SectionHeader(title: 'Trending'));
+      children.add(
+        _strip(
+          [
+            for (final p in _latest.skip(1).take(6))
+              TrendCard(post: p, onTap: () => openPost(context, p)),
+          ],
+          height: 262,
+        ),
+      );
+    }
+
+    // Explore more: category tiles
+    if (_categories.isNotEmpty) {
+      children.add(const SectionHeader(title: 'Explore more'));
+      children.add(_explore());
+    }
+
+    // Latest list
+    if (_latest.length > 7) {
       children.add(const SectionHeader(title: 'Latest news'));
-      for (final p in _latest.skip(1).take(4)) {
+      for (final p in _latest.skip(7).take(5)) {
         children.add(_row(StoryRow(post: p)));
       }
     }
@@ -276,6 +347,51 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Grid of category tiles. Tapping one opens that category's tab.
+  Widget _explore() {
+    final shown = _categories.take(9).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.05,
+        children: [
+          for (var i = 0; i < shown.length; i++)
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => setState(() => _tab = i + 1),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor:
+                        _explorePalette[i % _explorePalette.length].withValues(alpha: 0.12),
+                    child: Icon(
+                      _exploreIcons[i % _exploreIcons.length],
+                      color: _explorePalette[i % _explorePalette.length],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    shown[i].name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.2),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   /// Adds the standard side margin around a list row.
   Widget _row(Widget child) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -283,9 +399,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   /// A horizontal row of cards.
-  Widget _strip(List<Widget> items) {
+  Widget _strip(List<Widget> items, {double height = 224}) {
     return SizedBox(
-      height: 224,
+      height: height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),

@@ -58,6 +58,11 @@ class _ArticleScreenState extends State<ArticleScreen> {
       appBar: AppBar(
         actions: [
           IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Share',
+            onPressed: () => sharePost(post.title, post.link),
+          ),
+          IconButton(
             icon: const Icon(Icons.link),
             tooltip: 'Copy link',
             onPressed: () async {

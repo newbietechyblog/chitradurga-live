@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../models/post.dart';
 import '../screens/article_screen.dart';
+import '../services/links.dart';
 
 /// Opens the in-app article reader.
 Future<void> openPost(BuildContext context, NewsPost post) async {
@@ -109,12 +110,29 @@ class StoryRow extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      '${post.category.isNotEmpty ? '${post.category} · ' : ''}${timeAgo(post.date)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${post.category.isNotEmpty ? '${post.category} · ' : ''}${timeAgo(post.date)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => sharePost(post.title, post.link),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.share_outlined,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

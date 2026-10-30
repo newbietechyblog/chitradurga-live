@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'text_utils.dart';
@@ -23,4 +24,9 @@ Future<void> callNumber(BuildContext context, String phone) async {
       const SnackBar(content: Text('Could not open the phone dialer.')),
     );
   }
+}
+
+/// Shares a story with the phone's share sheet (WhatsApp, messages, etc.).
+Future<void> sharePost(String title, String url) async {
+  await Share.share('$title\n$url');
 }

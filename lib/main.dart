@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'screens/coming_soon.dart';
 import 'screens/events_screen.dart';
 import 'screens/helplines_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/me_screen.dart';
 import 'screens/polls_screen.dart';
 
 void main() {
@@ -42,7 +42,7 @@ class ChitradurgaLiveApp extends StatelessWidget {
   }
 }
 
-/// Bottom menu. Sections not built yet show a short note.
+/// Bottom menu: News, Events, Polls, Helplines and Me.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -63,10 +63,7 @@ class _MainShellState extends State<MainShell> {
           EventsScreen(),
           PollsScreen(),
           HelplinesScreen(),
-          ComingSoonScreen(
-            title: 'Me',
-            note: 'Sign in, your profile and your posts are coming in the next update.',
-          ),
+          MeScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(

@@ -6,6 +6,7 @@ import '../services/links.dart';
 import '../services/wp_api.dart';
 import '../widgets/article_body.dart';
 import '../widgets/chip_filter.dart';
+import 'create_post_screen.dart';
 
 /// Temples, festivals and programmes for the next 30 days.
 class EventsScreen extends StatefulWidget {
@@ -74,6 +75,11 @@ class _EventsScreenState extends State<EventsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Temples & Events', style: TextStyle(fontWeight: FontWeight.w700)),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => openComposer(context, type: 'event'),
+        icon: const Icon(Icons.add),
+        label: const Text('Add event'),
       ),
       body: Column(
         children: [

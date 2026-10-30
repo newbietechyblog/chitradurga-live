@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config.dart';
 import '../models/category.dart';
+import '../models/extras.dart';
 import '../models/post.dart';
 
 /// Talks to the WordPress site. Every screen goes through this class.
@@ -52,6 +53,37 @@ class WpApi {
     });
     final list = await _getJson(uri) as List<dynamic>;
     return list.map((e) => NewsCategory.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Stories an editor marked as breaking in the last 48 hours.
+  Future<List<BreakingItem>> fetchBreaking() async {
+    final list = await _getJson(Uri.parse('${AppConfig.appApi}/breaking')) as List<dynamic>;
+    return list.map((e) => BreakingItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Polls, newest first, with live vote counts.
+  Future<List<Poll>> fetchPolls() async {
+    final list = await _getJson(Uri.parse('${AppConfig.appApi}/polls')) as List<dynamic>;
+    return list.map((e) => Poll.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Upcoming events for the next [days] days. [category] is temple, festival, programme or other.
+  Future<List<CalendarEvent>> fetchEvents({int days = 30, String? category}) async {
+    final uri = Uri.parse('${AppConfig.appApi}/events').replace(queryParameters: {
+      'days': '$days',
+      if (category != null && category.isNotEmpty) 'category': category,
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Helplines, services or notices. [category] is helpline, service or notice.
+  Future<List<LocalInfo>> fetchInfo({String? category}) async {
+    final uri = Uri.parse('${AppConfig.appApi}/info').replace(queryParameters: {
+      if (category != null && category.isNotEmpty) 'category': category,
+    });
+    final list = await _getJson(uri) as List<dynamic>;
+    return list.map((e) => LocalInfo.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   void dispose() => _client.close();

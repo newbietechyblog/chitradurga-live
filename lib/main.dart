@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'screens/coming_soon.dart';
+import 'screens/events_screen.dart';
+import 'screens/helplines_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/polls_screen.dart';
 
 void main() {
   runApp(const ChitradurgaLiveApp());
@@ -39,7 +42,7 @@ class ChitradurgaLiveApp extends StatelessWidget {
   }
 }
 
-/// Bottom menu with five sections. Sections not built yet show a short note.
+/// Bottom menu. Sections not built yet show a short note.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -57,21 +60,12 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: const [
           HomeScreen(),
-          ComingSoonScreen(
-            title: 'Community',
-            note: 'Community posts, likes and comments are coming in the next update.',
-          ),
-          ComingSoonScreen(
-            title: 'Polls',
-            note: 'Polls are coming in a later update.',
-          ),
-          ComingSoonScreen(
-            title: 'Discuss',
-            note: 'Discussions are coming in a later update.',
-          ),
+          EventsScreen(),
+          PollsScreen(),
+          HelplinesScreen(),
           ComingSoonScreen(
             title: 'Me',
-            note: 'Sign in and your profile are coming in a later update.',
+            note: 'Sign in, your profile and your posts are coming in the next update.',
           ),
         ],
       ),
@@ -85,9 +79,9 @@ class _MainShellState extends State<MainShell> {
             label: 'News',
           ),
           NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Community',
+            icon: Icon(Icons.temple_hindu_outlined),
+            selectedIcon: Icon(Icons.temple_hindu),
+            label: 'Events',
           ),
           NavigationDestination(
             icon: Icon(Icons.poll_outlined),
@@ -95,9 +89,9 @@ class _MainShellState extends State<MainShell> {
             label: 'Polls',
           ),
           NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
-            selectedIcon: Icon(Icons.forum),
-            label: 'Discuss',
+            icon: Icon(Icons.support_agent_outlined),
+            selectedIcon: Icon(Icons.support_agent),
+            label: 'Helplines',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

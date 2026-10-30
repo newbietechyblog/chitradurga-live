@@ -4,6 +4,7 @@ import '../config.dart';
 import '../models/category.dart';
 import '../models/post.dart';
 import '../services/wp_api.dart';
+import '../widgets/breaking_banner.dart';
 import '../widgets/category_bar.dart';
 import '../widgets/story_cards.dart';
 import 'search_screen.dart';
@@ -123,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
+          const BreakingBanner(),
           if (_categories.isNotEmpty)
             CategoryBar(
               categories: _categories,

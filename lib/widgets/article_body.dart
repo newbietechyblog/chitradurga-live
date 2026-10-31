@@ -46,6 +46,11 @@ class ArticleBody extends StatelessWidget {
       return;
     }
 
+    if (tag == 'table') {
+      _addTable(node, out);
+      return;
+    }
+
     if (_blockTags.contains(tag)) {
       final text = node.text.replaceAll(RegExp(r'\s+'), ' ').trim();
       if (text.isNotEmpty) {
@@ -77,6 +82,61 @@ class ArticleBody extends StatelessWidget {
       ),
     );
   }
+
+  /// Draws an HTML table as a bordered grid. Wide tables scroll sideways.
+  void _addTable(dom.Element table, List<Widget> out) {
+    final rowsData = <List<dom.Element>>[];
+    for (final tr in table.querySelectorAll('tr')) {
+      final cells = tr.children
+          .where((c) => c.localName == 'td' || c.localName == 'th')
+          .toList();
+      if (cells.isNotEmpty) rowsData.add(cells);
+    }
+    if (rowsData.isEmpty) return;
+
+    // Every row must have the same number of columns, so pad short rows.
+    final columns = rowsData.map((r) => r.length).reduce((a, b) => a > b ? a : b);
+
+    final rows = <TableRow>[];
+    for (final cells in rowsData) {
+      final isHeader = cells.every((c) => c.localName == 'th');
+      rows.add(
+        TableRow(
+          decoration: isHeader ? BoxDecoration(color: Colors.grey.shade200) : null,
+          children: [
+            for (var i = 0; i < columns; i++)
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  i < cells.length ? _clean(cells[i].text) : '',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    out.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Table(
+            defaultColumnWidth: const IntrinsicColumnWidth(),
+            border: TableBorder.all(color: Colors.grey.shade400),
+            children: rows,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _clean(String text) => text.replaceAll(RegExp(r'\s+'), ' ').trim();
 
   void _addImage(dom.Element img, List<Widget> out) {
     final src = img.attributes['src'];

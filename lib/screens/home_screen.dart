@@ -10,6 +10,7 @@ import '../services/wp_api.dart';
 import '../widgets/ad_slot.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/breaking_banner.dart';
+import '../widgets/hero_carousel.dart';
 import '../widgets/category_feed.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/section_header.dart';
@@ -248,18 +249,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final children = <Widget>[const BreakingBanner()];
 
-    // Lead story
+    // Hero: the five most recent stories, one at a time
     if (_latest.isNotEmpty) {
-      children.add(LeadCard(post: _latest.first));
+      children.add(HeroCarousel(posts: _latest.take(5).toList()));
     }
 
-    // Trending: large cards in a row
-    if (_latest.length > 1) {
+    // Trending: large cards in a row (stories not already in the hero)
+    if (_latest.length > 6) {
       children.add(const SectionHeader(title: 'Trending'));
       children.add(
         _strip(
           [
-            for (final p in _latest.skip(1).take(6))
+            for (final p in _latest.skip(5).take(6))
               TrendCard(post: p, onTap: () => openPost(context, p)),
           ],
           height: 262,
@@ -274,9 +275,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Latest list
-    if (_latest.length > 7) {
+    if (_latest.length > 11) {
       children.add(const SectionHeader(title: 'Latest news'));
-      for (final p in _latest.skip(7).take(5)) {
+      for (final p in _latest.skip(11).take(5)) {
         children.add(_row(StoryRow(post: p)));
       }
     }

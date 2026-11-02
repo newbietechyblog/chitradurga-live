@@ -149,16 +149,6 @@ class _ArticleActionsState extends State<ArticleActions> {
               ),
             ),
           ),
-          Expanded(
-            child: TextButton.icon(
-              onPressed: () => sharePost(widget.title, widget.link),
-              icon: Icon(Icons.share_outlined, color: muted, size: 19),
-              label: Text(
-                'Share',
-                style: TextStyle(color: muted, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
         ],
       ),
     );

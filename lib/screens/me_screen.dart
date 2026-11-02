@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/account_api.dart';
 import '../services/session.dart';
 import 'create_post_screen.dart';
+import 'saved_screen.dart';
 import 'sign_in_screen.dart';
 
 /// Your account: sign in, post, and sign out.
@@ -105,6 +106,10 @@ class _MeScreenState extends State<MeScreen> {
     }
   }
 
+  void _openSaved() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedScreen()));
+  }
+
   Future<void> _signOut() async {
     await Session.clear();
     if (mounted) setState(() => _session = null);
@@ -161,6 +166,15 @@ class _MeScreenState extends State<MeScreen> {
                 child: const Text('Create a free account'),
               ),
             ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: _openSaved,
+                icon: const Icon(Icons.bookmark_outline),
+                label: const Text('Saved stories'),
+              ),
+            ),
           ],
         ),
       ),
@@ -208,6 +222,15 @@ class _MeScreenState extends State<MeScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.bookmark_outline),
+            title: const Text('Saved stories'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openSaved,
           ),
         ),
         const SizedBox(height: 12),

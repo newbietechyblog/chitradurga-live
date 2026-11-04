@@ -10,6 +10,7 @@ import '../models/notice.dart';
 import '../models/post.dart';
 import '../models/reader_update.dart';
 import '../models/social.dart';
+import '../models/special.dart';
 
 /// Talks to the WordPress site. Every screen goes through this class.
 class WpApi {
@@ -73,6 +74,12 @@ class WpApi {
       for (final e in json.entries)
         if (e.value is Map) e.key as String: AppAd.fromJson(Map<String, dynamic>.from(e.value as Map)),
     };
+  }
+
+  /// Special pages that are live today (set in WordPress under Settings → App Specials).
+  Future<List<SpecialPage>> fetchSpecials() async {
+    final list = await _getJson(Uri.parse('${AppConfig.appApi}/specials')) as List<dynamic>;
+    return list.map((e) => SpecialPage.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Stories an editor marked as breaking in the last 48 hours.

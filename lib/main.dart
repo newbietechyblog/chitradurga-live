@@ -4,6 +4,7 @@ import 'screens/events_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/me_screen.dart';
 import 'screens/polls_screen.dart';
+import 'screens/specials_screen.dart';
 import 'screens/updates_screen.dart';
 import 'widgets/ad_slot.dart';
 
@@ -66,6 +67,7 @@ class _MainShellState extends State<MainShell> {
           const HomeScreen(),
           EventsScreen(),
           const UpdatesScreen(),
+          const SpecialsScreen(),
           PollsScreen(),
           MeScreen(),
         ],
@@ -92,6 +94,11 @@ class _MainShellState extends State<MainShell> {
                 icon: Icon(Icons.groups_outlined),
                 selectedIcon: Icon(Icons.groups),
                 label: 'Updates',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome),
+                label: 'Specials',
               ),
               NavigationDestination(
                 icon: Icon(Icons.poll_outlined),

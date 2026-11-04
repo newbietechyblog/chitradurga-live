@@ -76,7 +76,7 @@ class _ArticleMoreState extends State<ArticleMore> {
               child: StoryRow(post: p),
             ),
         ],
-        const AdSlot(),
+        const AdSlot(slot: 'article'),
         const SiteFooter(),
       ],
     );

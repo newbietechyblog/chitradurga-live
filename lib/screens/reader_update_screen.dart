@@ -66,7 +66,7 @@ class ReaderUpdateScreen extends StatelessWidget {
               ],
             ),
           ),
-          const AdSlot(),
+          const AdSlot(slot: 'article'),
           const SiteFooter(),
         ],
       ),

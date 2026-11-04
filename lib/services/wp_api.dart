@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../models/app_ad.dart';
 import '../models/category.dart';
 import '../models/extras.dart';
 import '../models/notice.dart';
@@ -61,6 +62,17 @@ class WpApi {
     });
     final list = await _getJson(uri) as List<dynamic>;
     return list.map((e) => NewsCategory.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Banners for the app's ad spaces ('home', 'article', 'bottom').
+  /// Spaces with no banner set are left out.
+  Future<Map<String, AppAd>> fetchAppAds() async {
+    final json = await _getJson(Uri.parse('${AppConfig.appApi}/app-ads'));
+    if (json is! Map) return <String, AppAd>{};
+    return {
+      for (final e in json.entries)
+        if (e.value is Map) e.key as String: AppAd.fromJson(Map<String, dynamic>.from(e.value as Map)),
+    };
   }
 
   /// Stories an editor marked as breaking in the last 48 hours.

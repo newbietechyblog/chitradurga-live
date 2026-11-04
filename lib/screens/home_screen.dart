@@ -300,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    children.add(const AdSlot());
+    children.add(const AdSlot(slot: 'home'));
 
     // Most discussed
     if (_mostDiscussed.isNotEmpty) {
@@ -327,8 +327,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       );
     }
-
-    children.add(const AdSlot());
 
     // Events by category
     for (final entry in _eventGroups.entries) {

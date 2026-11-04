@@ -73,7 +73,7 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AdSlot(height: 48),
+          const AdSlot(slot: 'bottom', height: 48),
           NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
